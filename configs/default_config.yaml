@@ -1,0 +1,72 @@
+# ==============================================================================
+# Default Configuration for Wi-Fi CSI Human Presence & Motion Sensing System
+# B.Sc. Thesis Prototype (v0.1) - Hamedan University of Technology
+# Author: Research Prototype / Supervisor: Dr. Hassan Bashiri
+# ==============================================================================
+
+project:
+  name: "wifi-csi-human-sensing"
+  version: "0.1.0"
+  seed: 42
+
+signal:
+  num_classes: 5
+  class_names:
+    0: "Empty"
+    1: "Stationary_Presence"
+    2: "Walking"
+    3: "Sitting_Standing"
+    4: "Falling"
+  sampling_rate_hz: 100.0
+  window_duration_sec: 2.0
+  window_size_packets: 200      # T = 200 packets (2.0s @ 100 Hz)
+  stride_packets: 100           # 50% overlap (1.0s stride)
+  num_subcarriers: 52           # K = 52 (ESP32-CSI-Tool IEEE 802.11n 20 MHz default; 90 for Widar3.0)
+
+dsp:
+  hampel:
+    window_size: 7
+    n_sigmas: 3.0
+    mad_scale: 1.4826
+  butterworth:
+    lowcut_hz: 0.1              # Preserves 0.2 - 0.4 Hz chest respiration
+    highcut_hz: 15.0
+    order: 3
+  stft:
+    n_fft: 64
+    win_length: 32
+    hop_length: 8
+    window: "hann"
+  normalization:
+    eps: 1.0e-8
+
+synthetic_data:
+  num_samples_per_class: 200    # Total 1000 samples by default
+  multipath_components: 4
+  awgn_std_range: [0.02, 0.08]
+  cfo_slope_max_rad: 0.35
+  outlier_prob: 0.015
+  outlier_magnitude_range: [2.5, 5.0]
+
+model:
+  in_channels: 2                # [Filtered Amplitude, Sanitized/Filtered Phase]
+  conv_channels: [32, 64, 128]
+  conv_dropout: 0.15
+  temporal_pooled_len: 100
+  lstm_hidden_size: 128
+  lstm_num_layers: 2
+  lstm_bidirectional: true
+  lstm_dropout: 0.30
+  attention_dim: 128
+  head_hidden_dim: 128
+  head_dropout_1: 0.40
+  head_dropout_2: 0.20
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 1.0e-3
+  weight_decay: 1.0e-4
+  train_split: 0.70
+  val_split: 0.15
+  test_split: 0.15
